@@ -1,0 +1,96 @@
+Detections executed against a real Kusto engine
+Date: 2026-08-12
+Engine: mcr.microsoft.com/azuredataexplorer/kustainer-linux
+No Azure subscription. No Sentinel workspace.
+======================================================================
+
+THE PROBLEM THIS SOLVES
+
+  Until now nothing in this repo executed a single line of KQL. The tests
+  checked YAML structure: query field present, sane frequency, a MITRE
+  technique attached. All worth having, none of it evidence that a query
+  parses, that its column references resolve, or that it fires on an
+  attack and stays quiet on everything else.
+
+  I had written this lab off as blocked, on the grounds that KQL needs a
+  Log Analytics workspace and a workspace needs a subscription. That was
+  wrong. Sentinel needs a subscription; the Kusto engine underneath it
+  does not. Microsoft publishes it as a container, free for dev and test.
+
+    docker run -d --name kustainer -e ACCEPT_EULA=Y -m 4G -p 8080:8080 \
+      mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest
+
+WHAT NOW RUNS
+
+  All four shipped rules, against controlled data, 11 tests:
+
+    self-service-role-assignment      4 tests
+    keyvault-bulk-secret-read         3 tests
+    break-glass-off-hours             2 tests
+    dormant-privileged-reactivation   3 tests
+
+  Every test plants a true positive AND near-miss decoys that must not
+  fire. The decoys are the point. A rule that returns the attack row is
+  easy. A rule that returns the attack row and nothing else is a
+  detection, and structural validation cannot tell you which you have.
+
+  Decoys currently guarding each rule:
+
+    self-service         an admin granting the role to someone else
+                         a self-grant of an unprivileged role
+                         a self-grant that FAILED
+                         UPN casing differing between Entra fields
+
+    keyvault-bulk        volume under the 20-read floor
+                         SecretList rather than SecretGet, because
+                         enumerating names is not reading values and
+                         conflating them alerts on every backup job
+
+    break-glass          same account inside business hours
+                         an ordinary account off-hours
+                         the 08:00 and 18:00 boundaries specifically
+
+    dormant              a privileged account with a normal 10-day gap
+                         an account not on the watchlist
+                         a FAILED sign-in, which would otherwise turn
+                         password-spray against a dormant admin into a
+                         "the account is back" alert
+
+WHAT THIS PROVES
+
+  The KQL parses. Column references resolve. Joins, summarize, maxif and
+  the dynamic-field extractions all behave. Each rule fires on its target
+  and stays silent on its decoys.
+
+WHAT IT DOES NOT PROVE
+
+  Sentinel-specific behaviour, and the gap is worth being precise about:
+
+  - _GetWatchlist is a Sentinel function, not a Kusto one. Two of the
+    four rules depend on it, so the harness defines a stub returning the
+    same shape. Surrounding logic is genuinely exercised; watchlist
+    refresh timing, size limits and the SearchKey column are not.
+
+  - The fixture schema carries only the columns these queries touch. Real
+    tables are far wider, and a query that works here can still fail in a
+    tenant by referencing a column the fixture omits.
+
+  - Ingestion lag, the incident pipeline, entity mapping and alert
+    grouping are all Sentinel. None are tested.
+
+  Passing means the detection logic is sound. It does not mean the rule
+  is deployed and working.
+
+CI
+
+  A second job runs the emulator and executes the suite on every push.
+  It also fails deliberately if the tests SKIP rather than run: the
+  harness skips when Kusto is unreachable, which is correct locally and
+  wrong in CI. Without that check a broken emulator would produce a green
+  job that executed no KQL whatsoever.
+
+  That guard exists because this repo has now hit the same failure five
+  separate times: gitleaks after a version bump, checkov on nested ARM,
+  checkov again when flattened, the RBAC linter on live kubectl output,
+  and a PSRule pathIgnore that processed zero rules. Every one reported
+  success while reading nothing.

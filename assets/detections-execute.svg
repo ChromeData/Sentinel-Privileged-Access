@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="754" height="466" viewBox="0 0 754 466" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13">
+<rect width="754" height="466" rx="8" fill="#0d1117" stroke="#30363d"/>
+<rect width="754" height="34" rx="8" fill="#161b22"/>
+<rect y="26" width="754" height="8" fill="#161b22"/>
+<circle cx="18" cy="17" r="5" fill="#ff5f56"/>
+<circle cx="36" cy="17" r="5" fill="#ffbd2e"/>
+<circle cx="54" cy="17" r="5" fill="#27c93f"/>
+<text x="72" y="22" fill="#8b949e">detections run against a real Kusto engine</text>
+<text x="16" y="54" fill="#7ee787">$</text><text x="33" y="54" fill="#c9d1d9">pytest tests/test_detections_execute.py</text>
+<text x="16" y="94" fill="#8b949e" xml:space="preserve"># all four Sentinel detections executed against a real Kusto engine</text>
+<text x="16" y="114" fill="#8b949e" xml:space="preserve"># (Microsoft&#x27;s kustainer container — no Azure subscription)</text>
+<text x="16" y="154" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_self_service_role_assignment            PASSED</text>
+<text x="16" y="174" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_self_service_matches_eligible_too        PASSED</text>
+<text x="16" y="194" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_self_service_case_insensitive_upn        PASSED</text>
+<text x="16" y="214" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_keyvault_bulk_read_fires_on_burst        PASSED</text>
+<text x="16" y="234" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_keyvault_bulk_read_ignores_low_volume    PASSED</text>
+<text x="16" y="254" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_keyvault_bulk_read_ignores_other_ops     PASSED</text>
+<text x="16" y="274" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_break_glass_off_hours                    PASSED</text>
+<text x="16" y="294" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_break_glass_boundary_inclusive           PASSED</text>
+<text x="16" y="314" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_dormant_account_reactivation_fires       PASSED</text>
+<text x="16" y="334" fill="#c9d1d9" xml:space="preserve">tests/test_detections_execute.py::test_dormant_ignores_unprivileged             PASSED</text>
+<text x="16" y="354" fill="#f85149" font-weight="600" xml:space="preserve">tests/test_detections_execute.py::test_dormant_ignores_failed_signins           PASSED</text>
+<text x="16" y="394" fill="#c9d1d9" xml:space="preserve">11 passed</text>
+<text x="16" y="414" fill="#8b949e" xml:space="preserve"># each rule has decoys that must NOT fire: a failed self-grant, SecretList vs</text>
+<text x="16" y="434" fill="#8b949e" xml:space="preserve"># SecretGet, a failed sign-in against a dormant admin. the decoys are the point.</text>
+</svg>

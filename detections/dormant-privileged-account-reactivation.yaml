@@ -1,0 +1,49 @@
+id: 690d1e33-607a-4adc-b22e-a8155ec52a4d
+name: Dormant privileged account reactivation
+description: |
+  Detects a sign-in from a privileged account that has been idle for an extended
+  period. A long-dormant admin suddenly authenticating is a classic indicator of
+  a compromised or abandoned-but-not-deprovisioned privileged identity, precisely
+  the account a PAM program is supposed to have under management.
+severity: High
+requiredDataConnectors:
+  - connectorId: AzureActiveDirectory
+    dataTypes:
+      - SigninLogs
+queryFrequency: 1h
+queryPeriod: 90d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - InitialAccess
+  - Persistence
+relevantTechniques:
+  - T1078.004        # Valid Accounts: Cloud Accounts
+query: |
+  let dormancy = 30d;
+  let lookback = 90d;
+  // Define the privileged set however your tenant models it. This lab uses a
+  // watchlist so the rule is portable; swap for IdentityInfo AssignedRoles in a
+  // real tenant.
+  let privilegedUsers = _GetWatchlist('PrivilegedAccounts') | project UserPrincipalName;
+  let recentSignins = SigninLogs
+    | where TimeGenerated > ago(lookback)
+    | where ResultType == 0
+    | where UserPrincipalName in (privilegedUsers);
+  recentSignins
+  | summarize
+      firstSeen = min(TimeGenerated),
+      lastPriorSignin = maxif(TimeGenerated, TimeGenerated < ago(1h)),
+      thisSignin = max(TimeGenerated)
+      by UserPrincipalName
+  // Fired only when the gap before this sign-in exceeds the dormancy threshold.
+  | where isnotempty(lastPriorSignin) and thisSignin - lastPriorSignin > dormancy
+  | project thisSignin, UserPrincipalName, lastPriorSignin,
+            idleDays = toint((thisSignin - lastPriorSignin) / 1d)
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: UserPrincipalName
+version: 1.0.0
+kind: Scheduled

@@ -1,0 +1,22 @@
+id: f5b3bfd3-a053-428c-bc4b-7bdb6c34bfd0
+name: Break-glass account used outside change window
+description: |
+  Hunting query. Surfaces sign-ins from designated break-glass / emergency-access
+  accounts occurring outside business hours. Break-glass accounts should be near-
+  silent; any use is worth a look, and off-hours use especially so.
+tactics:
+  - InitialAccess
+relevantTechniques:
+  - T1078
+query: |
+  let breakGlass = _GetWatchlist('BreakGlassAccounts') | project UserPrincipalName;
+  let businessStart = 8;   // local hours, adjust to your operating window
+  let businessEnd = 18;
+  SigninLogs
+  | where UserPrincipalName in (breakGlass)
+  | extend localHour = datetime_part("hour", TimeGenerated)   // assumes workspace TZ
+  | where localHour < businessStart or localHour >= businessEnd
+  | project TimeGenerated, UserPrincipalName, IPAddress,
+            AppDisplayName, ResultType, localHour
+  | order by TimeGenerated desc
+version: 1.0.0
