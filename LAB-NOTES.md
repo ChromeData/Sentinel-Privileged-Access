@@ -1,68 +1,67 @@
-# Lab Notes — Sentinel Privileged-Access Detections
+# Lab Notes — 04 Sentinel Privileged-Access Detections
 
-> Running log, newest first.
-
----
-
-## Known traps (pre-seeded — confirm or replace)
-
-### Watchlists must exist before the rules run
-
-`dormant-privileged-account-reactivation` and the break-glass hunt call
-`_GetWatchlist('PrivilegedAccounts')` / `('BreakGlassAccounts')`. Create those
-watchlists first or the query errors. In a real tenant, swap the watchlist for
-`IdentityInfo | where AssignedRoles has_any (...)`.
-
-### Ingestion latency is not instant
-
-After `make simulate`, allow several minutes before expecting an incident.
-SigninLogs and AuditLogs typically land within ~5–15 min but can lag. A rule that
-"didn't fire" is often a rule that hasn't ingested yet — check the raw logs first.
-
-### queryPeriod vs queryFrequency
-
-The dormant-account rule looks back 90d but runs hourly. Get this pairing wrong and
-you either miss events or reprocess the same ones into duplicate incidents. Worth
-understanding the interaction rather than copying the numbers.
-
-### Placeholder GUIDs will bounce a PR
-
-Every rule ships with a `6f1a2b3c-0000-...` placeholder id. `make validate` flags
-them. Replace with `uuidgen` output before deploying or submitting upstream.
-
-### Timezone in the break-glass hunt
-
-`datetime_part("hour", TimeGenerated)` uses the workspace timezone, which may be
-UTC. If your business window is local, convert explicitly — an off-by-timezone
-business-hours filter is a silent false-negative generator.
+Running log. Errors, dead ends, fixes, surprises. Dated, newest at the bottom.
 
 ---
 
-## YYYY-MM-DD — <first real entry>
-
-**Goal:**
-
-**What happened:**
+## Format
 
 ```
-```
+### YYYY-MM-DD — what I was trying to do
 
-**Why:**
-
+**Expected:**
+**Got:**
+**Cause:**
 **Fix:**
+```
 
-**Time lost:**
+---
+
+## Decisions and finds while building
+
+### Hunting queries don't have a severity — the validator now knows that
+
+First version required `severity` of every file. The break-glass hunting query
+has none, correctly, because a hunting query is a saved search, not a scheduled
+alert. Requiring severity of it was a category error. The validator now uses a
+relaxed schema for anything under `hunting/`. Pinned by two tests.
+
+### Real GUIDs, and a check that keeps them real
+
+Every detection shipped with a placeholder GUID. Replaced all four with real
+UUIDs, and the validator fails any `6f1a2b3c-0000...` placeholder — so a
+copy-pasted new detection can't sneak a placeholder into a submission.
+
+### Watchlists over IdentityInfo, on purpose
+
+The rules reference `_GetWatchlist('PrivilegedAccounts')` rather than
+`IdentityInfo | where AssignedRoles ...`. Watchlists make the rules portable and
+testable without a fully-populated identity graph. Note in the README says to
+swap for IdentityInfo in a real tenant.
+
+---
+
+## Known traps (confirm on deployment)
+
+- **Timezone in break-glass-off-hours.** `datetime_part("hour", ...)` uses the
+  workspace timezone. If that's UTC and the team is US-based, "off hours" is
+  wrong by 5-8h. Confirm the workspace TZ before trusting the window.
+- **queryPeriod 90d on the dormancy rule.** Long lookbacks cost ingestion and
+  can be slow. Confirm it runs inside the frequency window.
+- **Watchlists must exist before import** or the rules error at first run with a
+  message that doesn't obviously point at the missing watchlist.
 
 ---
 
 ## Open questions
 
-- [ ] False-positive rate of each rule against a 24h quiet baseline?
-- [ ] Which of these overlaps with stock Sentinel content, and where does the PAM
-      framing genuinely add coverage?
-- [ ] Is the Key Vault baseline (5x hourly mean) the right shape, or should it be
-      a proper anomaly function (series_decompose_anomalies)?
+- [ ] Do the rules fire cleanly against simulated sign-in / role-assignment data?
+- [ ] False-positive rate on the bulk-secret-read rule for legit automation?
+- [ ] Does the dormancy query perform acceptably over 90d in a busy tenant?
+- [ ] Capture one screenshot of each rule firing for findings/.
 
-## What I would do differently
+---
 
-_End._
+## Log
+
+_(first entry goes here on the first deployment)_

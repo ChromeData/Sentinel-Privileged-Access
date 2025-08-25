@@ -1,123 +1,76 @@
 # Lab 04 — Privileged-Access Detections for Microsoft Sentinel
 
-**A set of KQL analytics rules and hunting queries that detect privileged-access
-abuse — the CyberArk/PAM threat model expressed in Azure's detection language —
-validated against simulated activity in a lab workspace.**
+[![tests](https://github.com/ChromeData/Sentinel-Privileged-Access/actions/workflows/tests.yml/badge.svg)](https://github.com/ChromeData/Sentinel-Privileged-Access/actions/workflows/tests.yml)
+
+**The PAM kill chain, written as Sentinel alerts. A dormant admin waking up, a
+user granting themselves a role, a vault read at 3am — detections written by
+someone who actually operates privileged access, not by a generic SOC.**
 
 | | |
 |---|---|
 | **Domains** | Azure · CyberArk/Idira (identity threat model) |
-| **Built on** | [Azure/Azure-Sentinel](https://github.com/Azure/Azure-Sentinel) (MIT) — schema, structure, and detection conventions |
-| **Runtime** | ~4 hours · ~$1–3 (Log Analytics ingestion for the lab window) |
-| **Status** | 🟡 In progress |
+| **Built on** | [Azure/Azure-Sentinel](https://github.com/Azure/Azure-Sentinel) (MIT) — schema + conventions |
+| **Cost** | ~$1–3 (Log Analytics ingestion) · **Runtime** ~4 hours |
+| **Status** | 🟡 Built, validated, not yet deployed |
 
 ---
 
-## Why this lab exists
+## The point
 
-A PAM engineer knows the privileged-access kill chain cold: a dormant admin
-suddenly authenticates, someone adds themselves to a privileged role, a break-glass
-account is used outside a change window, credentials are read from a vault at an
-odd hour. Most Sentinel content is written by SOC analysts. Detections written by
-someone who actually operates privileged access are a different, sharper thing —
-and that difference is exactly the profile you're building.
+A PAM engineer knows the privileged-access kill chain cold. Most Sentinel content
+is written by SOC analysts working from a generic threat model. Detections written
+by someone who *runs* privileged access catch things theirs don't — and that
+difference is the whole brand.
 
-This lab turns that domain knowledge into working, schema-valid KQL, tested against
-activity you generate on purpose so you can prove the rules fire.
+## The four detections
 
-## What I built
+| File | Fires when | Why it's a PAM insight |
+|---|---|---|
+| **dormant-privileged-account-reactivation** | an admin idle 30+ days suddenly signs in | abandoned-but-not-deprovisioned admins are the account PAM is supposed to own |
+| **self-service-role-assignment** | someone grants themselves a privileged role | the `roleAssignments/write` escalation, watched for directly |
+| **keyvault-bulk-secret-read** | one identity reads many secrets fast | vault enumeration — the thing CyberArk audit catches for free, rebuilt in KQL |
+| **break-glass-off-hours** (hunt) | an emergency account is used outside hours | break-glass should be near-silent; any use is a question |
 
-- **`detections/`** — analytics rules as YAML in the Azure-Sentinel repo format
-  (so they could be submitted upstream), each targeting one privileged-access
-  technique, mapped to MITRE ATT&CK.
-- **`hunting/`** — broader KQL hunting queries for the same threat model.
-- **A simulation script** that generates the benign-and-malicious activity each
-  rule is meant to catch, so detection is demonstrated rather than assumed.
-- A validation step that checks each YAML against the Sentinel schema before you
-  ever open a PR.
+## Validated, not just written
 
-## What I did not build
+[`scripts/validate.py`](./scripts/validate.py) schema-checks every detection the
+way the upstream Azure-Sentinel CI does: required keys, severity enum, ATT&CK
+tactic spelling, non-empty KQL, no placeholder GUIDs. **13 unit tests**, and one
+of them runs the validator against every detection in the repo — so if any file
+here regresses, CI goes red.
 
-The Sentinel platform, the detection schema, and the KQL functions are Microsoft's.
-My work is the detection logic, the ATT&CK mappings, the simulation harness, and
-the analysis of true/false positive behavior.
+```bash
+python -m pytest tests/ -v
+python scripts/validate.py
+```
+
+Building this surfaced a real modeling bug: hunting queries have no `severity`
+(they aren't alerts), so validating them with the detection schema wrongly failed
+them. The validator now distinguishes the two — that fix is in the history and
+it's the kind of detail that separates "wrote some YAML" from "understands the
+product."
+
+## What I didn't build
+
+The Sentinel schema and validation conventions are Microsoft's. The detection
+logic — the KQL, the thresholds, the choice of *what* to watch for — is the PAM
+domain knowledge, and it's mine.
 
 ---
 
-## The detections
+## Deploying
 
-| Rule | Technique | MITRE | Data source |
-|------|-----------|-------|-------------|
-| Dormant privileged account reactivation | A long-idle admin authenticates | T1078.004 | SigninLogs |
-| Self-service privileged role assignment | Principal adds itself to a privileged role | T1098 | AuditLogs |
-| Break-glass account used outside change window | Emergency account login off-hours | T1078 | SigninLogs |
-| Bulk secret retrieval from Key Vault | Abnormal volume of secret reads | T1552.001 | AzureDiagnostics / KeyVault |
-| PIM activation without matching ticket | Elevation with no linked change | T1548 | AuditLogs |
-
-Each lives in `detections/<name>.yaml` with the full query.
-
----
-
-## Running it
-
-### Prerequisites
-
-```bash
-az        >= 2.60
-pwsh      >= 7.4
-# A lab Log Analytics workspace with Microsoft Sentinel enabled.
-# Entra ID diagnostic settings shipping SigninLogs + AuditLogs to it.
-```
-
-### Validate before deploying
-
-```bash
-make validate     # schema-check every detections/*.yaml against the Sentinel spec
-```
-
-### Deploy to your lab workspace
-
-```bash
-export WORKSPACE_ID=...            # lab workspace only
-make deploy                        # creates the analytics rules via az CLI
-```
-
-### Prove they fire
-
-```bash
-make simulate     # generates the activity each rule targets
-# wait for ingestion (a few minutes), then check Incidents in the portal
-```
-
-### Teardown
-
-```bash
-make destroy      # removes the deployed rules
-```
-
----
+The detections import into Sentinel as Analytics Rules. Each references a
+watchlist (`PrivilegedAccounts`, `BreakGlassAccounts`) so they're portable; swap
+for `IdentityInfo` in a real tenant. Validate locally first, then import through
+the portal or your Sentinel-as-code pipeline.
 
 ## Findings
 
-The analysis that makes this a lab and not a copy-paste:
+`findings/` fills in once deployed against simulated activity.
+[LAB-NOTES.md](./LAB-NOTES.md) is the log.
 
-| Rule | Fired on sim? | False positives in 24h baseline | Tuning applied |
-|------|---------------|-------------------------------|----------------|
-| | | | |
+## License
 
-Questions worth answering:
-- What's the false-positive rate against a quiet baseline? Which rule is noisiest?
-- The dormant-account rule needs a lookback baseline — how long before it's
-  reliable, and how do you handle a genuinely new admin?
-- Which of these would a default Sentinel content pack already cover, and where
-  does your PAM framing add something the stock rule misses?
-- Could any of these become a real PR to Azure/Azure-Sentinel? (The schema
-  validation is already there. That's the point.)
-
-## What broke
-
-See [LAB-NOTES.md](./LAB-NOTES.md).
-
-## What I would do differently
-
-_End._
+Lab code: MIT ([LICENSE](./LICENSE)). Azure-Sentinel conventions stay MIT,
+credited above.

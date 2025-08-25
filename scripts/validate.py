@@ -18,7 +18,11 @@ except ImportError:
     sys.exit("pip install pyyaml")
 
 ROOT = Path(__file__).resolve().parent.parent
-REQUIRED = {"id", "name", "description", "severity", "query"}
+# Scheduled detections carry a severity; hunting queries do not - they aren't
+# alerts, they're saved searches. Requiring severity of a hunting file is a
+# category error, so the required set depends on which it is.
+REQUIRED_DETECTION = {"id", "name", "description", "severity", "query"}
+REQUIRED_HUNTING = {"id", "name", "description", "query"}
 SEVERITIES = {"Informational", "Low", "Medium", "High"}
 # Sentinel tactic names are capitalised words with no spaces; this is the set the
 # upstream validator accepts (abbreviated to the ones used here).
@@ -29,15 +33,19 @@ TACTICS = {
 }
 
 
-def check(path):
-    errs = []
-    doc = yaml.safe_load(path.read_text())
+def check_doc(doc, hunting=False):
+    """Validate a parsed detection dict. Split from check() so tests can pass
+    dicts directly - the rules are the part worth pinning, not the file I/O.
 
-    missing = REQUIRED - doc.keys()
+    hunting=True relaxes the schema to what a hunting query needs: no severity."""
+    errs = []
+    required = REQUIRED_HUNTING if hunting else REQUIRED_DETECTION
+    missing = required - doc.keys()
     if missing:
         errs.append(f"missing keys: {sorted(missing)}")
 
-    if doc.get("severity") not in SEVERITIES:
+    # Severity is only meaningful - and only required - for scheduled detections.
+    if not hunting and doc.get("severity") not in SEVERITIES:
         errs.append(f"severity '{doc.get('severity')}' not in {sorted(SEVERITIES)}")
 
     for t in doc.get("tactics", []):
@@ -51,6 +59,12 @@ def check(path):
         errs.append("placeholder GUID — run uuidgen and replace before submitting")
 
     return errs
+
+
+def check(path):
+    # Files under hunting/ are validated with the relaxed schema.
+    is_hunting = path.parent.name == "hunting"
+    return check_doc(yaml.safe_load(path.read_text()), hunting=is_hunting)
 
 
 def main():

@@ -1,4 +1,4 @@
-id: 6f1a2b3c-0000-4d00-8000-lab000hunt1   # replace: uuidgen
+id: f5b3bfd3-a053-428c-bc4b-7bdb6c34bfd0
 name: Break-glass account used outside change window
 description: |
   Hunting query. Surfaces sign-ins from designated break-glass / emergency-access
