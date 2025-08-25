@@ -1,0 +1,40 @@
+id: 6f1a2b3c-0000-4d00-8000-lab0000002   # replace: uuidgen
+name: Self-service privileged role assignment
+description: |
+  Detects a principal granting a privileged directory role to itself. This is the
+  Entra equivalent of the AWS AttachUserPolicy self-grant modelled in Lab 02 — the
+  actor and the target of the role assignment are the same identity.
+severity: High
+requiredDataConnectors:
+  - connectorId: AzureActiveDirectory
+    dataTypes:
+      - AuditLogs
+queryFrequency: 15m
+queryPeriod: 15m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - PrivilegeEscalation
+relevantTechniques:
+  - T1098            # Account Manipulation
+query: |
+  let privilegedRoles = dynamic([
+    "Global Administrator","Privileged Role Administrator",
+    "User Administrator","Security Administrator","Application Administrator"
+  ]);
+  AuditLogs
+  | where OperationName in ("Add member to role","Add eligible member to role")
+  | where Result == "success"
+  | extend roleName = tostring(TargetResources[0].modifiedProperties[1].newValue)
+  | extend actor = tostring(InitiatedBy.user.userPrincipalName)
+  | extend target = tostring(TargetResources[0].userPrincipalName)
+  | where isnotempty(actor) and actor =~ target        // self-assignment
+  | where roleName has_any (privilegedRoles)
+  | project TimeGenerated, actor, target, roleName, CorrelationId
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: actor
+version: 1.0.0
+kind: Scheduled
