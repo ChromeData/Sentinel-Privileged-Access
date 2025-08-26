@@ -9,7 +9,21 @@ See kusto_harness.py for what this does and does not prove.
 
 import pytest
 
-from kusto_harness import ensure_schema, ingest, reset, run  # noqa: F401
+from kusto_harness import ensure_schema, ingest, kusto_available, reset, run  # noqa: F401
+
+# The skip has to live HERE, in the test module.
+#
+# It was originally declared as pytestmark inside kusto_harness.py, which does
+# nothing: pytest only collects pytestmark from modules it collects as tests.
+# The skip silently never applied, and the first CI run errored 11 times with
+# connection refused instead of skipping cleanly.
+#
+# Same family as everything else in these labs, inverted: not a green result
+# that checked nothing, but a guard that looked present and was not wired up.
+pytestmark = pytest.mark.skipif(
+    not kusto_available(),
+    reason="Kusto emulator not running; see kusto_harness.py for the docker command",
+)
 
 
 @pytest.fixture(scope="module", autouse=True)

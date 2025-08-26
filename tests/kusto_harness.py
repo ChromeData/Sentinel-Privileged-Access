@@ -38,7 +38,6 @@ import os
 import urllib.error
 import urllib.request
 
-import pytest
 import yaml
 
 from pathlib import Path
@@ -66,10 +65,9 @@ def kusto_available():
         return False
 
 
-pytestmark = pytest.mark.skipif(
-    not kusto_available(),
-    reason="Kusto emulator not running; see module docstring for the docker command",
-)
+# NOTE: the skipif lives in the test module, not here. pytest only collects
+# pytestmark from modules it collects as tests, so declaring it in this helper
+# did nothing and the suite errored instead of skipping.
 
 
 def rows(result):
