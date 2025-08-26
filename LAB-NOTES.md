@@ -64,4 +64,37 @@ swap for IdentityInfo in a real tenant.
 
 ## Log
 
-_(first entry goes here on the first deployment)_
+### 2026-08-12 — validator run against the shipped detections
+
+**Expected:** all four files pass once I'd replaced the placeholder GUIDs.
+
+**Got:**
+
+```
+FAILED tests/test_validate.py::TestShipped::test_all_shipped_detections_valid[break-glass-off-hours.yaml]
+1 failed, 10 passed
+```
+
+**Cause:** I required `severity` of every file. `break-glass-off-hours.yaml` is a
+*hunting* query and correctly has none, because a hunting query is a saved search, not
+a scheduled alert. Requiring severity of it is a category error, and it was my
+validator that was wrong, not the detection.
+
+**Fix:** Split the schema. Anything under `hunting/` validates against a relaxed
+required-key set; `detections/` still demands severity. Added two tests: one that a
+hunting doc without severity passes, one that the *same* doc still fails as a
+detection, so the relaxation has to be deliberate rather than accidental.
+
+**Why I'm leaving this in the notes:** it's the difference between knowing the YAML
+schema and knowing the product. The tool told me the file was broken. The file was
+fine and my understanding was broken.
+
+---
+
+### 2026-08-12 — placeholder GUIDs
+
+All four detections shipped with `6f1a2b3c-0000-4d00-8000-lab...` IDs. Generated real
+UUIDs for each. The validator now fails any remaining placeholder, so a copy-pasted
+new detection can't carry one into a submission.
+
+Final run: **13 passed** (`findings/test-run.txt`).
