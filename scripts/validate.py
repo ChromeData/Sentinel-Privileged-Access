@@ -3,7 +3,7 @@
 
 Validates the fields the Azure-Sentinel repo's own CI checks: required keys,
 severity enum, ATT&CK tactic spelling, and that the KQL is non-empty. This is a
-subset of upstream validation — enough to catch the mistakes that get a PR bounced,
+subset of upstream validation, enough to catch the mistakes that get a PR bounced,
 without pulling the full toolchain.
 
 Run: python3 scripts/validate.py
@@ -56,7 +56,7 @@ def check_doc(doc, hunting=False):
         errs.append("empty query")
 
     if str(doc.get("id", "")).startswith("6f1a2b3c-0000"):
-        errs.append("placeholder GUID — run uuidgen and replace before submitting")
+        errs.append("placeholder GUID, run uuidgen and replace before submitting")
 
     return errs
 
@@ -87,7 +87,7 @@ def main():
     print()
     if failed:
         print(f"{failed} file(s) failed. Placeholder GUIDs are expected until you "
-              "finalise — replace them before any real submission.")
+              "finalise, replace them before any real submission.")
         sys.exit(1)
     print("all detections valid")
 

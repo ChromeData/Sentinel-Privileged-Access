@@ -3,7 +3,7 @@ name: Dormant privileged account reactivation
 description: |
   Detects a sign-in from a privileged account that has been idle for an extended
   period. A long-dormant admin suddenly authenticating is a classic indicator of
-  a compromised or abandoned-but-not-deprovisioned privileged identity — precisely
+  a compromised or abandoned-but-not-deprovisioned privileged identity, precisely
   the account a PAM program is supposed to have under management.
 severity: High
 requiredDataConnectors:
