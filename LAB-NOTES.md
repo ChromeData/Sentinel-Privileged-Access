@@ -98,3 +98,60 @@ UUIDs for each. The validator now fails any remaining placeholder, so a copy-pas
 new detection can't carry one into a submission.
 
 Final run: **13 passed** (`findings/test-run.txt`).
+
+### 2026-08-12, the KQL runs now, and I was wrong about why it couldn't
+
+I had this lab filed as permanently blocked: KQL needs a Log Analytics
+workspace, a workspace needs a subscription, end of story.
+
+That conflated two different things. **Sentinel** needs a subscription. The
+**Kusto engine underneath Sentinel** does not, and Microsoft publishes it as a
+container, free for dev and test:
+
+```
+docker run -d --name kustainer -e ACCEPT_EULA=Y -m 4G -p 8080:8080 \
+  mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest
+```
+
+So all four detections now execute for real. 11 tests, on top of the 13
+structural ones.
+
+**Every test plants decoys that must not fire**, and that is the whole value.
+A rule returning the attack row is easy; a rule returning the attack row *and
+nothing else* is a detection, and schema validation cannot tell the difference.
+The decoys that matter most:
+
+- **self-service**: a self-grant that *failed*. No escalation happened, so
+  alerting on it trains the analyst to ignore the rule.
+- **keyvault-bulk**: `SecretList` rather than `SecretGet`. Enumerating secret
+  names is not reading their values, and conflating them alerts on every backup
+  job that lists a vault.
+- **dormant**: a *failed* sign-in. Counting those turns password-spray against a
+  dormant admin into a "the account is back" alert, which inverts the meaning of
+  the rule entirely.
+- **break-glass**: 08:00 and 18:00 exactly, because the boundary is
+  `< start or >= end` and an off-by-one either floods the hunt with 8am logins
+  or hides a 6pm one.
+
+Also confirmed the `=~` in the self-service rule is load-bearing: Entra is
+inconsistent about UPN casing between `InitiatedBy` and `TargetResources`, so
+switching it to `==` would silently stop detecting. There is now a test pinning
+that.
+
+**Two constraints worth being honest about.** `_GetWatchlist` is a Sentinel
+function, not a Kusto one, and two of the four rules depend on it, so the
+harness stubs it. And the fixture schema carries only the columns these queries
+touch, so a query that passes here can still fail in a tenant by referencing a
+column the fixture omits. Passing means the logic is sound, not that the rule is
+deployed and working.
+
+**One thing I added deliberately:** the CI job fails if the tests *skip* rather
+than run. The harness skips when Kusto is unreachable, which is right locally
+and wrong in CI, and without that guard a broken emulator would give a green job
+that executed no KQL at all. That is the fifth time this repo has met the same
+failure mode, so it is now something I build against by default rather than
+notice afterwards.
+
+Full detail in `findings/kusto-execution-run.txt`.
+
+---
