@@ -9,7 +9,7 @@
 | **Domains** | Azure, CyberArk/Idira (identity threat model) |
 | **Built on** | [Azure/Azure-Sentinel](https://github.com/Azure/Azure-Sentinel) (schema and conventions) |
 | **Cost** | ~$1 to $3 (log ingestion). **Runtime** ~4 hours |
-| **Status** | Built and verified. All 4 detections validate (13 passing, output in findings/). Not yet deployed |
+| **Status** | All four detections execute against a real Kusto engine (11 tests with decoys, output in findings/). Sentinel-specific behaviour still needs a workspace |
 
 ## Situation
 
