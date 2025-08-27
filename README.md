@@ -43,6 +43,17 @@ Each one is schema checked the way the upstream Azure Sentinel CI checks it: req
 
 <sub>The rigor caught a modeling bug in the checker itself: hunting queries carry no severity because they are not alerts, so validating them against the alert schema wrongly failed them. The checker now tells the two apart. In [LAB-NOTES.md](./LAB-NOTES.md).</sub>
 
+## Decisions
+
+| Chose | Over | Because |
+|---|---|---|
+| Execute every rule against a real Kusto engine | schema validation only | Valid YAML proves a rule is well-formed, not that it detects anything. Sentinel needs a subscription, but the Kusto engine underneath ships as a free container — so the rules can actually run. |
+| Plant decoys beside every attack | asserting only that the rule fires | A rule that fires on everything is as useless as one that fires on nothing, and schema validation cannot tell you which you have. A failed self-grant, `SecretList` instead of `SecretGet`, a failed sign-in from a dormant admin — the decoys are the real test. |
+| Fail CI when the suite **skips** | treating skips as green | A broken emulator produces skips, and skips read as "fine" in a CI summary while proving nothing. |
+| A separate schema for hunting queries | validating everything as an alert | Hunting queries carry no severity because they are not alerts. Validating them against the alert schema failed them for being correct. |
+| Point each detection at a watchlist | hardcoding identities into the query | Makes the rules portable into someone else's workspace instead of tied to mine. |
+| Four narrow PAM detections | broad SOC-style coverage | Most Sentinel content is written from a generic threat model. The value here is the privileged-access attack chain specifically — dormant admins, self-grants, vault enumeration, break-glass use. |
+
 ## What I did not build
 
 The Sentinel schema and conventions are Microsoft's. The detection logic, the thresholds, and the choice of what to watch for are the PAM knowledge, and that is mine.
