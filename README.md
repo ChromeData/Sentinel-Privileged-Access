@@ -1,5 +1,8 @@
 # Lab 04: Privileged Access Detections for Microsoft Sentinel
 
+<p align="center"><img src="assets/detections-execute.svg" alt="All four detections executed against a real Kusto engine" width="720"></p>
+
+
 [![tests](https://github.com/ChromeData/Sentinel-Privileged-Access/actions/workflows/tests.yml/badge.svg)](https://github.com/ChromeData/Sentinel-Privileged-Access/actions/workflows/tests.yml)
 
 **The PAM attack chain, written as Sentinel alerts. A sleeping admin waking up, a user granting themselves a role, a vault read at 3am. Detections written by someone who actually runs privileged access, not a generic SOC.**
