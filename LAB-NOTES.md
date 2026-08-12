@@ -1,4 +1,4 @@
-# Lab Notes — 04 Sentinel Privileged-Access Detections
+# Lab Notes, 04 Sentinel Privileged-Access Detections
 
 Running log. Errors, dead ends, fixes, surprises. Dated, newest at the bottom.
 
@@ -7,7 +7,7 @@ Running log. Errors, dead ends, fixes, surprises. Dated, newest at the bottom.
 ## Format
 
 ```
-### YYYY-MM-DD — what I was trying to do
+### YYYY-MM-DD, what I was trying to do
 
 **Expected:**
 **Got:**
@@ -19,7 +19,7 @@ Running log. Errors, dead ends, fixes, surprises. Dated, newest at the bottom.
 
 ## Decisions and finds while building
 
-### Hunting queries don't have a severity — the validator now knows that
+### Hunting queries don't have a severity. The validator now knows that
 
 First version required `severity` of every file. The break-glass hunting query
 has none, correctly, because a hunting query is a saved search, not a scheduled
@@ -29,7 +29,7 @@ relaxed schema for anything under `hunting/`. Pinned by two tests.
 ### Real GUIDs, and a check that keeps them real
 
 Every detection shipped with a placeholder GUID. Replaced all four with real
-UUIDs, and the validator fails any `6f1a2b3c-0000...` placeholder — so a
+UUIDs, and the validator fails any `6f1a2b3c-0000...` placeholder, so a
 copy-pasted new detection can't sneak a placeholder into a submission.
 
 ### Watchlists over IdentityInfo, on purpose
@@ -64,7 +64,7 @@ swap for IdentityInfo in a real tenant.
 
 ## Log
 
-### 2026-08-12 — validator run against the shipped detections
+### 2026-08-12, validator run against the shipped detections
 
 **Expected:** all four files pass once I'd replaced the placeholder GUIDs.
 
@@ -91,7 +91,7 @@ fine and my understanding was broken.
 
 ---
 
-### 2026-08-12 — placeholder GUIDs
+### 2026-08-12, placeholder GUIDs
 
 All four detections shipped with `6f1a2b3c-0000-4d00-8000-lab...` IDs. Generated real
 UUIDs for each. The validator now fails any remaining placeholder, so a copy-pasted

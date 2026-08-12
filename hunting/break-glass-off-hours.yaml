@@ -10,7 +10,7 @@ relevantTechniques:
   - T1078
 query: |
   let breakGlass = _GetWatchlist('BreakGlassAccounts') | project UserPrincipalName;
-  let businessStart = 8;   // local hours — adjust to your operating window
+  let businessStart = 8;   // local hours, adjust to your operating window
   let businessEnd = 18;
   SigninLogs
   | where UserPrincipalName in (breakGlass)

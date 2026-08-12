@@ -2,7 +2,7 @@ id: 8a209aa3-f3ae-473e-90c3-0dc150b023b5
 name: Self-service privileged role assignment
 description: |
   Detects a principal granting a privileged directory role to itself. This is the
-  Entra equivalent of the AWS AttachUserPolicy self-grant modelled in Lab 02 — the
+  Entra equivalent of the AWS AttachUserPolicy self-grant modelled in Lab 02, the
   actor and the target of the role assignment are the same identity.
 severity: High
 requiredDataConnectors:
