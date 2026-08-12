@@ -37,7 +37,11 @@ Each one is schema checked the way the upstream Azure Sentinel CI checks it: req
 
 ## Result
 
-13 tests, and one of them runs the checker against every detection in the repo, so if any file regresses, CI goes red. Building it surfaced a real modeling bug: hunting queries have no severity because they are not alerts, so checking them with the alert schema wrongly failed them. The checker now tells the two apart. That fix is in the history.
+**All four detections execute against a real query engine**, not just validate as YAML. Sentinel needs an Azure subscription, but the Kusto engine underneath it ships as a free container — so each rule runs against controlled data and has to fire on the attack while staying silent on decoys planted next to it. A *failed* self-grant, `SecretList` instead of `SecretGet`, a *failed* sign-in against a dormant admin: the decoys are the real test, because a rule that fires on everything is as useless as one that fires on nothing, and schema validation cannot tell you which you have.
+
+24 tests total — 13 structural, 11 executing real KQL with decoys. CI runs the emulator and fails the build if the suite *skips* instead of running, so a broken engine cannot masquerade as a pass. Full output in [findings/kusto-execution-run.txt](./findings/kusto-execution-run.txt).
+
+<sub>The rigor caught a modeling bug in the checker itself: hunting queries carry no severity because they are not alerts, so validating them against the alert schema wrongly failed them. The checker now tells the two apart. In [LAB-NOTES.md](./LAB-NOTES.md).</sub>
 
 ## What I did not build
 
