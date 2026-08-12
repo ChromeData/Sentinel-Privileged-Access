@@ -155,3 +155,28 @@ notice afterwards.
 Full detail in `findings/kusto-execution-run.txt`.
 
 ---
+
+### 2026-08-12, the skip guard that was not wired up
+
+First CI run after adding the Kusto tests failed: 13 passed, **11 errors**,
+connection refused. The schema-validation job runs `pytest tests/`, which picks
+up the execution tests, and there is no emulator in that job.
+
+They were supposed to skip. The `pytestmark = pytest.mark.skipif(...)` was
+declared in `kusto_harness.py`, the helper module. **pytest only collects
+`pytestmark` from modules it collects as tests**, so it did nothing at all.
+
+Same family as everything else here, inverted. Not a green result that checked
+nothing, but a guard that looked present, read correctly in review, and was
+never wired to anything. Moved into the test module; verified both directions:
+
+```
+with Kusto:     24 passed
+without Kusto:  13 passed, 11 skipped
+```
+
+Testing the absent case is the part I nearly skipped. A skip guard is only
+worth what its failure mode is worth, and the only way to know it works is to
+run it in the condition it exists for.
+
+---
