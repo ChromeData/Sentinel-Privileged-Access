@@ -20,3 +20,57 @@ jobs:
         run: python -m pytest tests/ -v
       - name: full validator run
         run: python scripts/validate.py
+
+  execute:
+    name: Execute detections against Kusto
+    runs-on: ubuntu-latest
+    # The validate job above checks that the YAML is well formed. It cannot
+    # tell you the KQL parses, that the column references resolve, or that a
+    # rule fires on an attack and stays quiet on normal activity.
+    #
+    # Sentinel needs a subscription. The Kusto engine underneath it does not:
+    # Microsoft publishes it as a container, free for dev and test. So the
+    # queries get executed for real against controlled data.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest pyyaml
+
+      - name: start the Kusto emulator
+        run: |
+          set -euo pipefail
+          docker run -d --name kustainer -e ACCEPT_EULA=Y -m 4G -p 8080:8080 \
+            mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest
+
+          # Poll rather than sleep. Startup is 30-90s depending on the runner.
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+              http://localhost:8080/v1/rest/mgmt \
+              -H "Content-Type: application/json" \
+              -d '{"csl":".show version"}' || true)
+            [ "$code" = "200" ] && { echo "Kusto up after ${i} polls"; exit 0; }
+            sleep 5
+          done
+          echo "Kusto emulator never became ready"
+          docker logs kustainer | tail -50
+          exit 1
+
+      - name: execute every detection
+        run: |
+          # -p no:cacheprovider keeps the runner clean; the important flag is
+          # the explicit file, so a skipped harness cannot pass silently.
+          python -m pytest tests/test_detections_execute.py -v
+
+      - name: fail if the suite skipped instead of running
+        run: |
+          # The harness skips when Kusto is unreachable, which is right locally
+          # and wrong here. Without this, a broken emulator would produce a
+          # green job that executed no KQL at all.
+          out=$(python -m pytest tests/test_detections_execute.py -q 2>&1 | tail -3)
+          echo "$out"
+          if echo "$out" | grep -qi "skipped"; then
+            echo "::error::detection tests skipped in CI; the emulator was not reachable"
+            exit 1
+          fi
