@@ -54,7 +54,7 @@ python scripts/validate.py
 
 ## Findings
 
-`findings/` fills in once deployed. [LAB-NOTES.md](./LAB-NOTES.md) is the log.
+[`findings/`](./findings/) holds the Kusto execution run: all four detections firing on real data, each with decoys that must not fire. [LAB-NOTES.md](./LAB-NOTES.md) is the log.
 
 ## License
 
