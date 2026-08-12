@@ -1,4 +1,4 @@
-id: 6f1a2b3c-0000-4d00-8000-lab0000001   # replace with a real GUID: uuidgen
+id: 690d1e33-607a-4adc-b22e-a8155ec52a4d
 name: Dormant privileged account reactivation
 description: |
   Detects a sign-in from a privileged account that has been idle for an extended

@@ -1,4 +1,4 @@
-id: 6f1a2b3c-0000-4d00-8000-lab0000002   # replace: uuidgen
+id: 8a209aa3-f3ae-473e-90c3-0dc150b023b5
 name: Self-service privileged role assignment
 description: |
   Detects a principal granting a privileged directory role to itself. This is the
