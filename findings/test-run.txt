@@ -1,0 +1,27 @@
+Test run: 2026-08-12 00:37:53
+Host: Windows 11, Python Python 3.14.0
+Command: python -m pytest tests/ -v
+============================================================
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\SnatchedYourChain\Downloads\pam-cloud-labs-extracted\pam-cloud-labs\04-sentinel-privileged-access
+plugins: anyio-4.12.1, langsmith-0.7.10
+collecting ... collected 13 items
+
+tests/test_validate.py::TestRules::test_a_correct_detection_passes PASSED [  7%]
+tests/test_validate.py::TestRules::test_missing_required_key_fails PASSED [ 15%]
+tests/test_validate.py::TestRules::test_bad_severity_fails PASSED        [ 23%]
+tests/test_validate.py::TestRules::test_misspelled_tactic_fails PASSED   [ 30%]
+tests/test_validate.py::TestRules::test_empty_query_fails PASSED         [ 38%]
+tests/test_validate.py::TestRules::test_placeholder_guid_fails PASSED    [ 46%]
+tests/test_validate.py::TestHuntingSchema::test_hunting_query_without_severity_is_valid PASSED [ 53%]
+tests/test_validate.py::TestHuntingSchema::test_same_doc_fails_as_a_detection PASSED [ 61%]
+tests/test_validate.py::TestShipped::test_there_are_detections PASSED    [ 69%]
+tests/test_validate.py::TestShipped::test_all_shipped_detections_valid[dormant-privileged-account-reactivation.yaml] PASSED [ 76%]
+tests/test_validate.py::TestShipped::test_all_shipped_detections_valid[keyvault-bulk-secret-read.yaml] PASSED [ 84%]
+tests/test_validate.py::TestShipped::test_all_shipped_detections_valid[self-service-role-assignment.yaml] PASSED [ 92%]
+tests/test_validate.py::TestShipped::test_all_shipped_detections_valid[break-glass-off-hours.yaml] PASSED [100%]
+
+============================= 13 passed in 0.05s ==============================
+
